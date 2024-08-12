@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32616.157
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Router.WPF", "Router.WPF\Router.WPF.csproj", "{FF046777-B792-4C6D-B3BA-DF24BA619732}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Router.WPF.Sample", "Router.WPF.Sample\Router.WPF.Sample.csproj", "{3522E7C3-7A3C-4B75-AB64-5A3F0829B119}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FF046777-B792-4C6D-B3BA-DF24BA619732}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF046777-B792-4C6D-B3BA-DF24BA619732}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF046777-B792-4C6D-B3BA-DF24BA619732}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF046777-B792-4C6D-B3BA-DF24BA619732}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3522E7C3-7A3C-4B75-AB64-5A3F0829B119}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3522E7C3-7A3C-4B75-AB64-5A3F0829B119}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3522E7C3-7A3C-4B75-AB64-5A3F0829B119}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3522E7C3-7A3C-4B75-AB64-5A3F0829B119}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B373FE8C-494E-4BDF-AC5B-1BBFBE823BA0}
+	EndGlobalSection
+EndGlobal
