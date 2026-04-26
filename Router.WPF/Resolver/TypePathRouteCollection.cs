@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.Core.Abstractions.Routing;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Abstractions.Routing;
 
-namespace Unity.UI.Core
+namespace Router.Wpf.Core
 {
     public abstract class TypePathRouteCollection : RouteCollection
     {

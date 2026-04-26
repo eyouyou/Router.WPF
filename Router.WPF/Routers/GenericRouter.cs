@@ -1,99 +1,59 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.UI.Core.Abstractions.Routing;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.Core;
-using System.IO;
-using Unity.UI.WPF;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Reactive.Subjects;
-using System.Reactive.Linq;
-using System.Windows;
-using System.Xml.Linq;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Text.RegularExpressions;
-using Pidgin;
-using System.Runtime.CompilerServices;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using Unity.UI.WPF.Handlers;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Abstractions.Routing;
+using Router.Wpf.Handlers;
 
-namespace Unity.UI.WPF.Routers
+namespace Router.Wpf.Routers
 {
-    enum NotifyType
-    {
-        Self,
-        Child
-    }
     class GenericRouter : Router
     {
-        private readonly List<Route> _routes;
-        private readonly Dictionary<Route, IRouteContext> _contexts = new();
+        /// <summary>
+        /// 当前活跃的路由 context 链（root → leaf）。替代了原先的
+        /// <c>Dictionary&lt;Route, IRouteContext&gt;</c> 缓存 —— 那个缓存
+        /// 永不淘汰、且仅按 <c>Route.Key</c> 比较，导致同 Route 不同参数的导航
+        /// 总是拿到带过期参数的旧 context。
+        /// </summary>
+        private readonly List<IRouteContext> _activeChain = new();
+
+        // 给测试用的内部探针 —— 在不构造完整 WPF 视觉树的情况下观测链状态。
+        internal IReadOnlyList<IRouteContext> ActiveChainForTests => _activeChain;
+        internal void RegisterRoutesForTests(System.Collections.Generic.IEnumerable<Route> routes)
+        {
+            var collection = RouteCollection;
+            foreach (var route in routes)
+                RecursiveGenerateRoute(route, "/", ref collection);
+        }
+
         public override RouteCollection RouteCollection { get; } = new IndexRouteCollection();
-        readonly Frame frame;
+        readonly ContentControl host;
+
         internal GenericRouter(string? target = null, params Route[] routes)
         {
             CurrentTarget = target ?? "/";
-            _routes = new(routes);
-            Loaded += GenericRouter_Loaded;
-            frame = CreateFrame();
-            Content = frame;
-        }
+            host = CreateHost();
+            Content = host;
 
-        private static void FrameNavigated(List<(IRouteContext, NotifyType)> contexts)
-        {
-            try
+            // routes 直接被 Loaded 闭包捕获，不再用字段保存 —— 这些数据
+            // 只在 Router 进入视觉树那一刻才需要用一次。再用一个布尔标志
+            // 防止 Router 被搬到别的父节点时重复初始化、把索引加双份。
+            var initialized = false;
+            Loaded += (_, _) =>
             {
-                foreach (var context in contexts)
-                {
-                    switch (context.Item2)
-                    {
-                        case NotifyType.Self:
-                            context.Item1.OnMatchChanged.OnNext(context.Item1);
-                            break;
-                        case NotifyType.Child:
-                            if (context.Item1 is IParentRouteContext parent)
-                            {
-                                parent.OnOutletChanged.OnNext(context.Item1);
-                            }
-                            else
-                            {
-                                throw new Exception("to notify rerender outlet, parent must to implement [`IParentRouteContext`]");
-                            }
-                            break;
-                    }
-                    //TODO: 是不是就刷一个顶级的就够了
-                    break;
-                }
-            }
-            finally
-            {
-            }
+                if (initialized) return;
+                initialized = true;
+
+                var collection = RouteCollection;
+                foreach (var route in routes)
+                    RecursiveGenerateRoute(route, "/", ref collection);
+
+                Navigate(CurrentTarget, null);
+            };
         }
-
-        private void GenericRouter_Loaded(object sender, System.Windows.RoutedEventArgs e)
-        {
-            // 通过当前路径生成路由上下文
-            var collection = RouteCollection;
-            foreach (var item in _routes)
-            {
-                RecursiveGenerateRoute(item, "/", ref collection);
-            }
-
-            Navigate(CurrentTarget, null);
-        }
-
-
 
         static void RecursiveGenerateRoute(Route route, string parentPath, ref RouteCollection collection)
         {
-            var pathPattern = Path.Join(parentPath, route.Path);
-            pathPattern = pathPattern.Replace("\\", "/");
+            var pathPattern = PathUtil.Combine(parentPath, route.Path);
             collection.Add(pathPattern, route);
             if (route.Children != null)
             {
@@ -104,83 +64,117 @@ namespace Unity.UI.WPF.Routers
             }
         }
 
+        /// <summary>
+        /// LCA 差分跳转。把当前活跃链与新匹配链对齐，划分成三段：
+        ///   [0, keep)             Route + Match 完全一致，原样复用
+        ///   [keep, updateUntil)   Route 相同但参数不同，原地 Update（Match 替换）
+        ///   [updateUntil, ...)    Route 不同或长度不同，Replace（Dispose 旧 + 新建）
+        /// 带 <c>IsMultiple=true</c> 的 WindowHandler 是"强制替换锚点"：它对应的节点
+        /// 永不复用，同时把 keep 和 updateUntil 都截断在它之前，所以每次跳转都会
+        /// 弹出一个新窗体。
+        /// </summary>
         protected override bool Navigate(string pathName, bool addHistory, object? extraData)
         {
-            if (addHistory)
+            var matches = RouteCollection.Match(pathName);
+            if (matches.Count == 0) return false;
+
+            int keep = 0;
+            while (keep < matches.Count && keep < _activeChain.Count)
             {
-                PushRecord(pathName);
+                var nm = matches[keep];
+                var oldMatch = _activeChain[keep].Match;
+                if (!oldMatch.Route.Equals(nm.Route)) break;
+                if (!oldMatch.Equals(nm)) break;
+                if (IsForceReplaceAnchor(nm)) break;
+                keep++;
             }
 
-            var target = pathName;
+            int updateUntil = keep;
+            while (updateUntil < matches.Count && updateUntil < _activeChain.Count)
+            {
+                var nm = matches[updateUntil];
+                if (!_activeChain[updateUntil].Match.Route.Equals(nm.Route)) break;
+                if (IsForceReplaceAnchor(nm)) break;
+                updateUntil++;
+            }
 
-            var args = new NavigationEventArgs(target, extraData);
-
+            if (addHistory) PushRecord(pathName);
             CurrentTarget = pathName;
+            var args = new NavigationEventArgs(pathName, extraData);
 
-            var collection = RouteCollection;
+            // 整条链完全相同、长度也一致 —— 不需要动 chain。
+            // 历史依然要 push（按浏览器语义，重复 URL 也算一次跳转），
+            // NavigationRequested 也照常发出，保证订阅者感知得到。
+            if (keep == matches.Count && keep == _activeChain.Count)
+            {
+                NavigationRequested.OnNext(args);
+                return true;
+            }
 
-            var matches = collection.Match(target);
+            // 1. [keep, updateUntil) 区间内的 Match 原地替换。
+            //    这里不发 OnMatchChanged —— 最后只在最高变化点发一次，
+            //    其余层级靠 Outlet/Loaded 链自然向下级联渲染。
+            for (int i = keep; i < updateUntil; i++)
+                _activeChain[i].Match = matches[i];
 
-            //TODO: 需要排除的是 从上到下 IsMultiple true 到 IsMultiple false的场景 但是这种场景暂时不支持 或者可以通过另外的路由实现
-            var index = matches.FindIndex(it => it.Route.Handler is WindowHandler handler && handler.IsMultiple);
+            // 2. 释放旧链尾 [updateUntil, _activeChain.Count)，叶子先释放。
+            for (int i = _activeChain.Count - 1; i >= updateUntil; i--)
+                _activeChain[i].Dispose();
+            if (_activeChain.Count > updateUntil)
+                _activeChain.RemoveRange(updateUntil, _activeChain.Count - updateUntil);
 
+            // 3. 构造新链尾 [updateUntil, matches.Count)，从叶子向根反向构造，
+            //    这样在创建每个 context 时都能把已经做好的子节点作为它的 outlet。
+            var newTail = new List<IRouteContext>(matches.Count - updateUntil);
             IRouteContext? outletContext = null;
-            List<(IRouteContext, NotifyType)> contexts = new();
-            var isUnLoaded = false;
-            for (var i = matches.Count - 1; i >= 0; i--)
+            for (int i = matches.Count - 1; i >= updateUntil; i--)
             {
-                var isChanged = false;
-                var match = matches.ElementAt(i);
-                if (i + 1 >= matches.Count - index)
-                {
-                    outletContext = match.Route.Handler.CreateContext(match, outletContext);
-                }
-                else if (!_contexts.TryGetValue(match.Route, out var context))
-                {
-                    // 叶子没有outlet
-                    outletContext = match.Route.Handler.CreateContext(match, outletContext);
-                    _contexts[match.Route] = outletContext;
-                }
-                else
-                {
-                    context.OutletRouteContext = outletContext;
-                    outletContext = context;
-
-                    if (!outletContext.Match.Equals(match))
-                    {
-                        outletContext.Match = match;
-                        isChanged = true;
-                    }
-                }
-                // 如果未加载 只需要重新绘制父Outlet(需要通过父上下文去通知)
-                if (outletContext is FrameworkElement fe && !fe.IsLoaded)
-                {
-                    isUnLoaded = true;
-                }
-                else if (isUnLoaded && contexts.Count
-                    == 0)
-                {
-                    contexts.Insert(0, (outletContext, NotifyType.Child));
-                }
-                else if (isChanged)
-                {
-                    contexts.Insert(0, (outletContext, NotifyType.Self));
-                }
-
+                var ctx = matches[i].Route.Handler.CreateContext(matches[i], outletContext);
+                newTail.Insert(0, ctx);
+                outletContext = ctx;
             }
 
-            // root如果未加载 则走navigate逻辑
-            if (contexts.Count == 0)
+            // 4. 把"幸存的最后一个节点"（pivot，即最后一个被复用或更新过的 context）
+            //    的 OutletRouteContext 接到新链头；如果只是单纯截短，则置 null。
+            if (updateUntil > 0)
+                _activeChain[updateUntil - 1].OutletRouteContext = newTail.Count > 0 ? newTail[0] : null;
+
+            // 5. 拼接新链。
+            _activeChain.AddRange(newTail);
+
+            // 6. 在最高变化点触发一次渲染。三个分支互斥：
+            //    - 根被替换         -> 直接换 host.Content
+            //    - 存在 Update 区   -> 在它的最顶端发 OnMatchChanged，子层通过 Loaded 级联
+            //    - 否则纯 Replace   -> 在 pivot 上发 OnOutletChanged，让它的 Outlet 拿到新子链
+            if (updateUntil == 0)
             {
-                return frame.Navigate(outletContext);
+                host.Content = _activeChain.Count > 0 ? _activeChain[0] : null;
             }
-            else
+            else if (updateUntil > keep)
             {
-                FrameNavigated(contexts);
+                _activeChain[keep].OnMatchChanged.OnNext(_activeChain[keep]);
+            }
+            else if (_activeChain[updateUntil - 1] is IParentRouteContext parent)
+            {
+                parent.OnOutletChanged.OnNext(parent);
             }
 
             NavigationRequested.OnNext(args);
             return true;
         }
+
+        public override void Refresh()
+        {
+            // 把整条链全 Dispose 掉，让每一层都从头重建；
+            // 子级 Outlet 会在 Loaded 时重新挂上来。
+            for (int i = _activeChain.Count - 1; i >= 0; i--)
+                _activeChain[i].Dispose();
+            _activeChain.Clear();
+            host.Content = null;
+            base.Refresh();
+        }
+
+        private static bool IsForceReplaceAnchor(RouteMatch m)
+            => m.Route.Handler is WindowHandler { IsMultiple: true };
     }
 }

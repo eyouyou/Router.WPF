@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Router.WPF.Abstractions
+namespace Router.Wpf.Abstractions
 {
     public interface IIndexer<T>
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Unity.UI.Core
+namespace Router.Wpf.Core
 {
     public interface IToken
     {
@@ -38,7 +38,9 @@ namespace Unity.UI.Core
         public DynamicToken(string name, string type)
         {
             Name = name;
-            Type = TypeMapping.TryGetValue(type, out var t) ? t : throw new Exception($"unknown type tag `{type}`!");
+            Type = TypeMapping.TryGetValue(type, out var t)
+                ? t
+                : throw new ArgumentException($"Unknown type tag '{type}'. Supported tags: {string.Join(", ", TypeMapping.Keys)}.", nameof(type));
             TypeTag = type;
         }
 

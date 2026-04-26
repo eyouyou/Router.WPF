@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using Unity.UI.Core.Abstractions.Routing;
-using Unity.UI.Core.Abstractions;
+using Router.Wpf.Abstractions.Routing;
+using Router.Wpf.Abstractions;
 
-namespace Unity.UI.WPF.Handlers
+namespace Router.Wpf.Handlers
 {
     public interface IComponentHandler : IRouteHandler<FrameworkElement>
     {

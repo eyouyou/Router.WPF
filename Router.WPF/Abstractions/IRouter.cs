@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reactive.Subjects;
-using System.Text;
-using Unity.UI.Core.Abstractions.Routing;
 
-namespace Unity.UI.Core.Abstractions
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Router.Wpf.Abstractions.Routing;
+
+namespace Router.Wpf.Abstractions
 {
     public class NavigationEventArgs
     {
@@ -23,7 +25,7 @@ namespace Unity.UI.Core.Abstractions
         /// <summary>
         /// 跳转请求
         /// </summary>
-        Subject<NavigationEventArgs> NavigationRequested { get; }
+        Notifier<NavigationEventArgs> NavigationRequested { get; }
     }
 
 
@@ -42,6 +44,13 @@ namespace Unity.UI.Core.Abstractions
         string CurrentTarget { get; }
         IEnumerable<string> PathRecord { get; }
         bool Navigate(string target, object? extraData);
+
+        /// <summary>
+        /// 异步跳转入口。当前是同步 <see cref="Navigate"/> 的薄包装，调用方可以提前
+        /// 写成 <c>await</c> 形式；未来版本会用它承载路由守卫
+        /// （<c>CanActivate</c> / <c>CanDeactivate</c>）和延迟视图加载。
+        /// </summary>
+        Task<bool> NavigateAsync(string target, object? extraData = null, CancellationToken ct = default);
         /// <summary>
         /// 回退
         /// </summary>

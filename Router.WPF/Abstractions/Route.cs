@@ -4,9 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Text;
-using Unity.UI.Core.Abstractions.Routing;
+using Router.Wpf.Abstractions.Routing;
 
-namespace Unity.UI.Core.Abstractions
+namespace Router.Wpf.Abstractions
 {
     public class Route
     {
@@ -33,7 +33,7 @@ namespace Unity.UI.Core.Abstractions
         /// </summary>
         public IList<Route>? Children { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is Route route)
             {

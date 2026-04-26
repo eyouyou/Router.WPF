@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using Unity.UI.Core.Abstractions.Routing;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.WPF.Contexts;
+using Router.Wpf.Abstractions.Routing;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Contexts;
 
-namespace Unity.UI.WPF.Handlers
+namespace Router.Wpf.Handlers
 {
     public class WindowResult
     {
@@ -62,8 +62,7 @@ namespace Unity.UI.WPF.Handlers
 
         public override IRouteContext CreateContext(RouteMatch match, IRouteContext? outletRouteContext)
         {
-            var router = Application.Current.Router();
-            return new WindowRouteContext(match, Router.CreateFrame(), outletRouteContext);
+            return new WindowRouteContext(match, Router.CreateHost(), outletRouteContext);
         }
 
         public IComponentHandler CopyToComponent()

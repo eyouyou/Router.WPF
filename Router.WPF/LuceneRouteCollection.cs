@@ -1,177 +1,219 @@
-﻿using Lucene.Net.Analysis.Standard;
-using Lucene.Net.Documents;
-using Lucene.Net.Index;
-using Lucene.Net.QueryParsers;
-using Lucene.Net.QueryParsers.Classic;
-using Lucene.Net.Search;
-using Lucene.Net.Store;
-using Lucene.Net.Util;
-using Router.WPF.Abstractions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.UI.Core;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.Core.Abstractions.Routing;
+using System.Text.RegularExpressions;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Abstractions.Routing;
+using Router.Wpf.Core;
 
-namespace Unity.UI.WPF
+namespace Router.Wpf
 {
     public class Indexer
     {
         public string Key { get; set; }
         public float Score { get; set; } = 1.0f;
 
+        /// <summary>
+        /// 是否在索引阶段对字段值切词。自由文本字段（路由 key、path）应为 true；
+        /// 不可切的标识符（精确匹配）应为 false。在下方的内置索引器里，该开关
+        /// 控制是否往切词桶里写 token —— 若为 false，则只把整个值作为一个 token
+        /// 写到精确匹配桶。
+        /// </summary>
         public bool IsTokenization { get; set; } = true;
+
         public Indexer(string key, float? score = null)
         {
             Key = key;
-            if (score != null)
-            {
-                Score = score.Value;
-            }
+            if (score != null) Score = score.Value;
         }
     }
 
     public static class IndexerExtensions
     {
-        static Dictionary<string, string[]> _propertyCache = new();
-        static Dictionary<Type, Dictionary<string, PropertyInfo?>> _typeCache = new();
-        static object? GetNestedPropertyValue(this object obj, string propertyName)
+        // 反射结果缓存 —— 用 ConcurrentDictionary，从非 UI 线程注册路由时也是安全的。
+        private static readonly ConcurrentDictionary<string, string[]> _propertyCache = new();
+        private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<string, PropertyInfo?>> _typeCache = new();
+
+        private static object? GetNestedPropertyValue(this object obj, string propertyName)
         {
-            if (!_propertyCache.TryGetValue(propertyName, out var parts))
-            {
-                parts = propertyName.Split('.');
-                _propertyCache.Add(propertyName, parts);
-            }
+            var parts = _propertyCache.GetOrAdd(propertyName, n => n.Split('.'));
 
             object? data = obj;
             foreach (string part in parts)
             {
-                if (data == null)
-                    return null;
+                if (data == null) return null;
 
                 Type type = data.GetType();
-                if (!_typeCache.TryGetValue(type, out var properties))
-                {
-                    properties = new();
-                    _typeCache.Add(type, properties);
-                }
-                if (!properties.TryGetValue(part, out var propInfo))
-                {
-                    propInfo = type.GetProperty(part);
-                    properties.Add(part, propInfo);
-                }
+                var properties = _typeCache.GetOrAdd(type, _ => new ConcurrentDictionary<string, PropertyInfo?>());
+                var propInfo = properties.GetOrAdd(part, p => type.GetProperty(p));
 
-                if (propInfo == null)
-                    return null;
+                if (propInfo == null) return null;
 
                 data = propInfo.GetValue(data, null);
             }
             return data;
         }
+
         public static Dictionary<Indexer, string> GetIndices(this RouteMatcher matcher, Indexer[] indexers)
         {
             var dic = new Dictionary<Indexer, string>();
             foreach (var indexer in indexers)
             {
                 var value = matcher.GetNestedPropertyValue(indexer.Key);
-
                 if (value != null && value.ToString() is string v)
-                {
                     dic.Add(indexer, v);
-                }
-
             }
-
             return dic;
         }
     }
 
-    public class LuceneMemoryIndexer: IIndexer<RouteMatcher>
+    /// <summary>
+    /// 内存式路由搜索索引。原先使用 Lucene.Net，但实际只用到：每文档字段存储、
+    /// 前缀查询、一个简单的得分。Lucene 的核心特性（除小写 + 按非字母数字切词
+    /// 之外的分词器、布尔查询、评分调优、段管理）我们一样没用上，~50 行的活
+    /// 拖出 ~4MB 的依赖不划算，所以替换为内置实现。
+    ///
+    /// 新索引器：
+    /// - 切词：小写化后按"连续非字母数字"切分。
+    /// - 每字段维护一个 token → 桶 的映射。
+    /// - 搜索时同样切词，逐个 query term 在所有字段桶里做前缀匹配，
+    ///   按 <see cref="Indexer.Score"/> 字段权重加权累加。匹配比例
+    ///   <c>qt.Length / token.Length</c> 作为打分倍率 —— 完整命中比
+    ///   匹到更长 token 的得分高，自然排在前面。
+    /// </summary>
+    public class LuceneMemoryIndexer : IIndexer<RouteMatcher>, IDisposable
     {
-        private readonly LuceneVersion _version = LuceneVersion.LUCENE_48;
-        private readonly RAMDirectory _indexDirectory;
+        private static readonly Regex TermSplit = new(@"[^a-z0-9]+", RegexOptions.Compiled);
+
         private readonly Indexer[] _indexers;
+        private readonly List<Document> _docs = new();
+        private bool _disposed;
+
+        private sealed class Document
+        {
+            public RouteMatcher Source = null!;
+            // 原样存储用户传入的字段值（保留大小写），后续 Search 返回结果时回填到调用方。
+            public Dictionary<string, string> Fields = new();
+            // 每个字段的切词桶（已小写），搜索阶段用。
+            public Dictionary<string, HashSet<string>> Tokens = new();
+        }
+
         public LuceneMemoryIndexer(Indexer[] indexers)
         {
-            _indexDirectory = new RAMDirectory();
             _indexers = indexers;
         }
 
         public void Index(RouteMatcher[] routes)
         {
-            using var analyzer = new StandardAnalyzer(_version);
-            using var writer = new IndexWriter(_indexDirectory, new IndexWriterConfig(_version, analyzer));
-
-            foreach (var route in routes)
-            {
-                IndexRoute(writer, route, _indexers);
-            }
+            ThrowIfDisposed();
+            foreach (var r in routes) IndexOne(r);
         }
 
         public void Index(RouteMatcher matcher)
         {
-            using var analyzer = new StandardAnalyzer(_version);
-            using var writer = new IndexWriter(_indexDirectory, new IndexWriterConfig(_version, analyzer));
-
-            IndexRoute(writer, matcher, _indexers);
+            ThrowIfDisposed();
+            IndexOne(matcher);
         }
 
-        private static void IndexRoute(IndexWriter writer, RouteMatcher matcher, Indexer[] indexers)
+        private void IndexOne(RouteMatcher matcher)
         {
-            var luceneDoc = new Document { };
-
-            foreach (var (indexer, value) in matcher.GetIndices(indexers))
+            var doc = new Document { Source = matcher };
+            foreach (var (indexer, value) in matcher.GetIndices(_indexers))
             {
+                doc.Fields[indexer.Key] = value;
                 if (indexer.IsTokenization)
                 {
-                    var tokenizationField = new TextField(indexer.Key, value, Field.Store.YES)
-                    {
-                        Boost = indexer.Score
-                    };
-                    luceneDoc.Add(tokenizationField);
+                    var tokens = Tokenize(value);
+                    doc.Tokens[indexer.Key] = new HashSet<string>(tokens);
                 }
                 else
                 {
-                    var stringField = new StringField(indexer.Key, value, Field.Store.YES)
-                    {
-                        Boost = indexer.Score
-                    };
-                    luceneDoc.Add(stringField);
+                    // 精确匹配字段 —— 整个值小写化后作为单个 token 入桶。
+                    doc.Tokens[indexer.Key] = new HashSet<string> { value.ToLowerInvariant() };
                 }
             }
-
-            writer.AddDocument(luceneDoc);
-            writer.Commit();
+            _docs.Add(doc);
         }
 
-        public List<NameValueCollection> Search(string queryText)
+        public List<NameValueCollection> Search(string queryText) => Search(queryText, 10);
+
+        public List<NameValueCollection> Search(string queryText, int topN)
         {
-            using var analyzer = new StandardAnalyzer(_version);
-            using var reader = DirectoryReader.Open(_indexDirectory);
-            var searcher = new IndexSearcher(reader);
-
-            var parser = new MultiFieldQueryParser(_version, _indexers.Select(it => it.Key).ToArray(), analyzer);
-            var query = parser.Parse(queryText);
-            var hits = searcher.Search(query, 10).ScoreDocs;
-
+            ThrowIfDisposed();
             var results = new List<NameValueCollection>();
-            foreach (var hit in hits)
+            if (string.IsNullOrWhiteSpace(queryText) || topN <= 0) return results;
+
+            var queryTerms = Tokenize(queryText);
+            if (queryTerms.Length == 0) return results;
+
+            // 对每篇文档打分：每个 query term 取它在所有字段中最高的加权前缀匹配分；
+            // 把所有 query term 的最高分加起来作为这篇文档的总分。
+            var scored = new List<(Document doc, double score)>(_docs.Count);
+            foreach (var doc in _docs)
             {
-                var doc = searcher.Doc(hit.Doc);
-                var dic = new NameValueCollection();
-                foreach (var item in _indexers)
+                double total = 0;
+                bool allTermsMatched = true;
+                foreach (var qt in queryTerms)
                 {
-                    dic.Add(item.Key, doc.Get(item.Key));
+                    double bestForTerm = 0;
+                    foreach (var indexer in _indexers)
+                    {
+                        if (!doc.Tokens.TryGetValue(indexer.Key, out var bucket)) continue;
+                        foreach (var t in bucket)
+                        {
+                            if (!t.StartsWith(qt, StringComparison.Ordinal)) continue;
+                            // 长度比：完全匹配为 1.0，索引 token 越长得分越低。
+                            var ratio = (double)qt.Length / t.Length;
+                            var weighted = ratio * indexer.Score;
+                            if (weighted > bestForTerm) bestForTerm = weighted;
+                        }
+                    }
+                    if (bestForTerm == 0)
+                    {
+                        allTermsMatched = false;
+                        break;
+                    }
+                    total += bestForTerm;
                 }
-                results.Add(dic);
+
+                if (allTermsMatched && total > 0)
+                    scored.Add((doc, total));
             }
 
-            return results;
+            return scored
+                .OrderByDescending(s => s.score)
+                .Take(topN)
+                .Select(s =>
+                {
+                    var nv = new NameValueCollection();
+                    foreach (var ix in _indexers)
+                        nv.Add(ix.Key, s.doc.Fields.TryGetValue(ix.Key, out var v) ? v : null);
+                    return nv;
+                })
+                .ToList();
+        }
+
+        private static string[] Tokenize(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return Array.Empty<string>();
+            return TermSplit.Split(s.ToLowerInvariant())
+                            .Where(t => t.Length > 0)
+                            .ToArray();
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(LuceneMemoryIndexer));
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _docs.Clear();
         }
     }
 
@@ -182,8 +224,8 @@ namespace Unity.UI.WPF
 
         private readonly Indexer[] _indexers =
         {
-            new Indexer(KEY, 2.0f),
-            new Indexer(PATH, 1.0f)
+            new(KEY, 2.0f),
+            new(PATH, 1.0f),
         };
 
         private readonly LuceneMemoryIndexer _indexer;
@@ -192,6 +234,7 @@ namespace Unity.UI.WPF
         {
             _indexer = new LuceneMemoryIndexer(_indexers);
         }
+
         public override void Add(string pattern, Route route)
         {
             PathMatcher matcher = new TypePathParser(pattern);
@@ -205,13 +248,15 @@ namespace Unity.UI.WPF
             {
                 _indexer.Index(routeMatcher);
             }
-
             list.Add(routeMatcher);
         }
 
-        public override IEnumerable<RouteSearchInfo> Search(string pattern)
+        public override IEnumerable<RouteSearchInfo> Search(string pattern) => Search(pattern, 10);
+
+        public IEnumerable<RouteSearchInfo> Search(string pattern, int topN)
         {
-            return _indexer.Search(pattern).Select(it => new RouteSearchInfo(it[KEY]!, it[PATH]!));
+            return _indexer.Search(pattern, topN)
+                .Select(it => new RouteSearchInfo(it[KEY]!, it[PATH]!));
         }
     }
 }

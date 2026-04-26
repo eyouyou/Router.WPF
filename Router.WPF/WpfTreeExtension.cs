@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows;
 
-namespace Unity.UI.WPF
+namespace Router.Wpf
 {
     public static class WpfTreeExtension
     {
@@ -44,7 +44,7 @@ namespace Unity.UI.WPF
             }
             else
             {
-                return FindVisualParent<T>(parentObject);
+                return FindVisualParentUntil<T, U>(parentObject);
             }
         }
 

@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.Core.Abstractions.Routing;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Abstractions.Routing;
 
-namespace Unity.UI.WPF.Routers
+namespace Router.Wpf.Routers
 {
     public static class Extension
     {

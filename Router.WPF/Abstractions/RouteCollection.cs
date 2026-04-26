@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Unity.UI.Core.Abstractions.Routing
+namespace Router.Wpf.Abstractions.Routing
 {
     public class RouteMatcher
     {

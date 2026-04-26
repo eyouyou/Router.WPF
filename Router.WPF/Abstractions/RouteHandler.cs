@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace Unity.UI.Core.Abstractions.Routing
+namespace Router.Wpf.Abstractions.Routing
 {
     /// <summary>
     /// 包含各种各样的路由形式 比如弹窗以及内嵌

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Unity.UI.Core.Abstractions.Routing;
+using Router.Wpf.Abstractions.Routing;
 
-namespace Unity.UI.Core.Abstractions
+namespace Router.Wpf.Abstractions
 {
     public class PathMatch
     {
@@ -21,18 +21,22 @@ namespace Unity.UI.Core.Abstractions
         public string PathName { get; set; }
         public Dictionary<string, object> Parameters { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj is PathMatch pathMatch)
+            if (obj is not PathMatch other) return false;
+            if (PathName != other.PathName) return false;
+            if (Parameters.Count != other.Parameters.Count) return false;
+            foreach (var kvp in Parameters)
             {
-                return PathName == pathMatch.PathName && Parameters.SequenceEqual(pathMatch.Parameters);
+                if (!other.Parameters.TryGetValue(kvp.Key, out var v)) return false;
+                if (!Equals(kvp.Value, v)) return false;
             }
-            return false;
+            return true;
         }
 
         public override int GetHashCode()
         {
-            return PathName.GetHashCode() << 16 & Parameters.GetHashCode();
+            return HashCode.Combine(PathName, Parameters.Count);
         }
     }
 
@@ -51,14 +55,10 @@ namespace Unity.UI.Core.Abstractions
         }
         public Route Route { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj is RouteMatch routeMatch)
-            {
-                return Route.Equals(routeMatch.Route) && base.Equals(routeMatch);
-            }
-
-            return false;
+            if (obj is not RouteMatch routeMatch) return false;
+            return Route.Equals(routeMatch.Route) && base.Equals(routeMatch);
         }
 
         public RouteMatch CopyWith(Route? route = null)
@@ -74,7 +74,7 @@ namespace Unity.UI.Core.Abstractions
 
         public override int GetHashCode()
         {
-            return base.GetHashCode() << 12 & Route.GetHashCode();
+            return HashCode.Combine(base.GetHashCode(), Route);
         }
     }
 

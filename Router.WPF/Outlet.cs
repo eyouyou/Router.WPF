@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Unity.UI.Core.Abstractions;
-using Unity.UI.Core.Abstractions.Routing;
+using Router.Wpf.Abstractions;
+using Router.Wpf.Abstractions.Routing;
 
-namespace Unity.UI.WPF
+namespace Router.Wpf
 {
     /// <summary>
     /// 因为outlet每次都是new的 所以会被重复的加载和卸载
