@@ -1,0 +1,21 @@
+<UserControl x:Class="Router.WPF.Sample.Views.SettingsSecurityView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <StackPanel Margin="20">
+        <TextBlock Text="Security" Style="{StaticResource H2}"/>
+        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,16">
+            Sessions, two-factor, recovery codes.
+        </TextBlock>
+        <UniformGrid Columns="2">
+            <StackPanel>
+                <TextBlock Text="TWO-FACTOR" Style="{StaticResource Label}"/>
+                <TextBlock Text="Enabled (TOTP)" Style="{StaticResource Body}" Margin="0,4,0,0" Foreground="{StaticResource SuccessBrush}"/>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="ACTIVE SESSIONS" Style="{StaticResource Label}"/>
+                <TextBlock Text="3 devices" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </UniformGrid>
+    </StackPanel>
+</UserControl>

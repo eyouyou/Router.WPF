@@ -1,0 +1,63 @@
+<UserControl x:Class="Router.WPF.Sample.Views.PreferencesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BgBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="40,32" MaxWidth="900" HorizontalAlignment="Stretch">
+            <StackPanel>
+                <TextBlock Text="Preferences" Style="{StaticResource H1}"/>
+                <TextBlock Text="Demonstrates a nullable path segment: preferences/{theme?}." Style="{StaticResource Muted}" Margin="0,0,0,24"/>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Active theme parameter" Style="{StaticResource H3}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Text="theme = " Style="{StaticResource Mono}" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                            <Border Style="{StaticResource Tag}" Margin="6,0,0,0">
+                                <TextBlock Text="{Binding Theme}" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" FontFamily="Cascadia Mono, Consolas, monospace"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Margin="0,12,0,0"
+                                   Text="No theme segment was supplied. Pick one below or stay at /preferences.">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasTheme}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Switch theme" Style="{StaticResource H3}"/>
+                        <TextBlock Text="Each click navigates to a different sub-path." Style="{StaticResource Muted}" Margin="0,4,0,12"/>
+                        <WrapPanel>
+                            <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"
+                                    Command="{Binding SelectThemeCommand}" CommandParameter="light">
+                                <TextBlock Text="light"/>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"
+                                    Command="{Binding SelectThemeCommand}" CommandParameter="dark">
+                                <TextBlock Text="dark"/>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"
+                                    Command="{Binding SelectThemeCommand}" CommandParameter="auto">
+                                <TextBlock Text="auto"/>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"
+                                    Command="{Binding ClearThemeCommand}">
+                                <TextBlock Text="clear (no segment)"/>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

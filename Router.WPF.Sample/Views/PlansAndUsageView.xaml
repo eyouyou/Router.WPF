@@ -1,0 +1,81 @@
+<UserControl x:Class="Router.WPF.Sample.Views.PlansAndUsageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:r="clr-namespace:Router.Wpf;assembly=Router.WPF"
+             Background="{StaticResource BgBrush}"
+             MinWidth="640" MinHeight="480">
+    <Grid Margin="32,28">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource Tag}" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Window route" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text="IsMultiple = true" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="Plans and usage" Style="{StaticResource H1}" Margin="0,12,0,4"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="user id = " Style="{StaticResource Mono}" Foreground="{StaticResource MutedBrush}"/>
+                    <TextBlock Text="{Binding UserId}" Style="{StaticResource Mono}" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Available plans" Style="{StaticResource H3}"/>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                            Click a plan to navigate to /plan/{planId:int}.
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding Plans}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource ListItem}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}"/>
+                                                    <Border Style="{StaticResource Tag}" Margin="8,0,0,0">
+                                                        <TextBlock Text="{Binding Tier}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Style="{StaticResource Mono}" Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0">
+                                                    <Run Text="plan #"/>
+                                                    <Run Text="{Binding Id}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding MonthlyPrice}" VerticalAlignment="Center" Margin="0,0,16,0" FontWeight="SemiBold" FontSize="14"/>
+                                            <Button Grid.Column="2" Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding DataContext.ViewPlanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="View →"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Outlet" Style="{StaticResource Label}"/>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,8">
+                            With IsMultiple=true the framework reopens a fresh Window per navigation,
+                            so the selected plan will appear in a new window rather than below.
+                        </TextBlock>
+                        <Border Background="{StaticResource BgBrush}" CornerRadius="6" Margin="0,4,0,0" MinHeight="80"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <r:Outlet/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

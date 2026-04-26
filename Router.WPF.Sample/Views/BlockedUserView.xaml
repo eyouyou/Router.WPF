@@ -1,0 +1,46 @@
+<UserControl x:Class="Router.WPF.Sample.Views.BlockedUserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <Border Style="{StaticResource Tag}" HorizontalAlignment="Left" Margin="0,0,0,8">
+                <TextBlock Text="dynamic segment {blockedUserId:string}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+            </Border>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="{StaticResource AccentBrush}">
+                    <TextBlock Text="{Binding BlockedUserId[0]}" Foreground="White" FontWeight="SemiBold" FontSize="22"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding BlockedUserId}" Style="{StaticResource H2}"/>
+                    <TextBlock Text="Blocked user — view, unblock, or message." Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                <Button Style="{StaticResource SecondaryButton}" Command="{Binding BackToIndexCommand}">
+                    <TextBlock Text="← All blocked users"/>
+                </Button>
+                <Button Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Click="ShowMatches_Click">
+                    <TextBlock Text="GetRouteMatches()"/>
+                </Button>
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding RouteMatches}" Margin="0,16,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#F4F4F6" CornerRadius="4" Padding="10,6" Margin="0,0,0,4">
+                            <TextBlock Text="{Binding}" Style="{StaticResource Mono}"/>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

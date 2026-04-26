@@ -1,0 +1,90 @@
+<UserControl x:Class="Router.WPF.Sample.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             Background="{StaticResource BgBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
+        <Grid Margin="40,32" MaxWidth="960" HorizontalAlignment="Stretch">
+            <StackPanel>
+                <Border Style="{StaticResource Tag}" HorizontalAlignment="Left">
+                    <TextBlock Text="Router.WPF" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                </Border>
+                <TextBlock Text="A small WPF router demo" Style="{StaticResource H1}" Margin="0,12,0,4"/>
+                <TextBlock Style="{StaticResource Body}" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,28">
+                    <Run Text="This sample exercises the Router.WPF features: nested routes, typed parameters, "/>
+                    <Run Text="index routes, window handlers, navigation history, and Lucene search."/>
+                </TextBlock>
+
+                <UniformGrid Columns="2" Margin="0,0,0,16">
+                    <Border Style="{StaticResource Card}" Margin="0,0,8,8">
+                        <StackPanel>
+                            <TextBlock Text="Nested routing" Style="{StaticResource H3}"/>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                                Outlet renders the matched child. Try moderation to see two levels of nesting plus an IndexRoute.
+                            </TextBlock>
+                            <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="/moderation/blocked-users">
+                                <TextBlock Text="→ /moderation/blocked-users"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="8,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Typed parameters" Style="{StaticResource H3}"/>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                                Path patterns support {param:int}, {param:string} and a nullable {param?} segment.
+                            </TextBlock>
+                            <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="/moderation/blocked-users/alice">
+                                <TextBlock Text="→ /moderation/blocked-users/alice"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,8,8,0">
+                        <StackPanel>
+                            <TextBlock Text="Window handler" Style="{StaticResource H3}"/>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                                A route can render in a fresh Window instead of the main outlet. Each navigate opens a new window (IsMultiple=true).
+                            </TextBlock>
+                            <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="/billing-and-plans/plans-and-usage/1001">
+                                <TextBlock Text="→ open Plans window for user 1001"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="8,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Optional segment" Style="{StaticResource H3}"/>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                                Pattern preferences/{theme?} matches with or without the trailing segment.
+                            </TextBlock>
+                            <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="/preferences">
+                                <TextBlock Text="→ /preferences (no theme)"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Try the address bar" Style="{StaticResource H3}"/>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                            Type any path above and press Enter to navigate. Use Back / Forward to walk the history.
+                            The search box uses the framework's built-in Lucene index over route keys and paths.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
