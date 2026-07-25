@@ -1,0 +1,16 @@
+<UserControl x:Class="Router.WPF.Sample.Views.BlockedUsersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:r="clr-namespace:Router.Wpf;assembly=Router.WPF"
+             Background="Transparent">
+    <DockPanel Margin="20">
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="Blocked users" Style="{StaticResource H2}"/>
+            <TextBlock Text="The default child (IndexRoute) shows the list. Selecting a user navigates to /{blockedUserId:string}." Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+        </StackPanel>
+        <Border Background="{StaticResource BgBrush}" CornerRadius="6"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" MinHeight="200">
+            <r:Outlet/>
+        </Border>
+    </DockPanel>
+</UserControl>

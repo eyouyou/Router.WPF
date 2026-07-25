@@ -12,6 +12,12 @@ namespace Router.WPF.Sample
         string Key,
         string Title,
         IReadOnlyList<SidebarItem> Items);
+    public sealed record PageItem(string Key, string Title, string Glyph);
+    public sealed record LeftNavigationItem(string Key, string Title, string Glyph);
+    public sealed record FeatureMatrixCell(
+        string PageKey,
+        string NavigationKey,
+        IReadOnlyList<FeatureTab> FeatureTabs);
 
     public sealed record NavigationSection(
         string Key,
@@ -103,6 +109,57 @@ namespace Router.WPF.Sample
                         Sidebar.Where(item => item.Path.StartsWith("/billing-and-plans")).ToArray()),
                 }),
         };
+
+        public static readonly IReadOnlyList<PageItem> MatrixPages = new[]
+        {
+            new PageItem("workspace", "Workspace", "\uE80F"),
+            new PageItem("management", "Management", "\uE713"),
+            new PageItem("commerce", "Commerce", "\uE8C7"),
+        };
+
+        public static readonly IReadOnlyList<LeftNavigationItem> MatrixNavigation = new[]
+        {
+            new LeftNavigationItem("personal", "Personal", "\uE77B"),
+            new LeftNavigationItem("team", "Team", "\uE716"),
+            new LeftNavigationItem("system", "System", "\uE770"),
+        };
+
+        public static readonly IReadOnlyList<FeatureMatrixCell> MatrixCells = new[]
+        {
+            Cell("workspace", "personal",
+                Tab("start", "Start", "/home"),
+                Tab("identity", "Identity", "/profile")),
+            Cell("workspace", "team",
+                Tab("collaboration", "Collaboration", "/account")),
+            Cell("workspace", "system",
+                Tab("experience", "Experience", "/appearance", "/preferences")),
+
+            Cell("management", "personal",
+                Tab("accounts", "Accounts", "/profile", "/account")),
+            Cell("management", "team",
+                Tab("safety", "Safety", "/moderation/blocked-users")),
+            Cell("management", "system",
+                Tab("settings", "Settings", "/settings/general")),
+
+            Cell("commerce", "personal",
+                Tab("billing", "Billing", "/billing-and-plans/spending-limits")),
+            Cell("commerce", "team",
+                Tab("plans", "Plans", "/billing-and-plans/spending-limits")),
+            Cell("commerce", "system",
+                Tab("controls", "Controls", "/billing-and-plans/spending-limits")),
+        };
+
+        private static FeatureMatrixCell Cell(
+            string pageKey,
+            string navigationKey,
+            params FeatureTab[] tabs)
+            => new(pageKey, navigationKey, tabs);
+
+        private static FeatureTab Tab(string key, string title, params string[] paths)
+            => new(
+                key,
+                title,
+                paths.Select(path => Sidebar.First(item => item.Path == path)).ToArray());
 
         public static void Register()
         {

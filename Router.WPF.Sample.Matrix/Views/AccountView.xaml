@@ -1,0 +1,55 @@
+<UserControl x:Class="Router.WPF.Sample.Views.AccountView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BgBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="40,32" MaxWidth="900" HorizontalAlignment="Stretch">
+            <StackPanel>
+                <TextBlock Text="Account" Style="{StaticResource H1}"/>
+                <TextBlock Text="Sign-in, security, plan." Style="{StaticResource Muted}" Margin="0,0,0,24"/>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Plan" Style="{StaticResource H3}"/>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                            You are on the Pro Monthly plan. Manage billing and usage in the dedicated window.
+                        </TextBlock>
+                        <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                                Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="/billing-and-plans/spending-limits">
+                            <TextBlock Text="Manage billing"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Security" Style="{StaticResource H3}"/>
+                        <UniformGrid Columns="2" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="TWO-FACTOR" Style="{StaticResource Label}"/>
+                                <TextBlock Text="Enabled (TOTP)" Style="{StaticResource Body}" Margin="0,4,0,0" Foreground="{StaticResource SuccessBrush}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="LAST SIGN IN" Style="{StaticResource Label}"/>
+                                <TextBlock Text="2 hours ago · 192.168.1.4" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" BorderBrush="{StaticResource DangerBrush}">
+                    <StackPanel>
+                        <TextBlock Text="Danger zone" Style="{StaticResource H3}" Foreground="{StaticResource DangerBrush}"/>
+                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,12">
+                            Once an account is deleted there is no going back.
+                        </TextBlock>
+                        <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" BorderBrush="{StaticResource DangerBrush}" Foreground="{StaticResource DangerBrush}">
+                            <TextBlock Text="Delete account"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

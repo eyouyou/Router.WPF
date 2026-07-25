@@ -22,17 +22,51 @@ namespace Router.WPF.Sample.ViewModels
         private string _addressBarPath = AppRoutes.StartupPath;
         private string _searchQuery = string.Empty;
         private string _statusMessage = "Ready";
+        private NavigationSection _activeSection;
+        private FeatureTab _activeFeatureTab;
+        private bool _isLeftNavigationOpen = true;
+        private bool _isFeaturePanelOpen = true;
 
         public MainViewModel()
         {
             _router = Application.Current.Router();
 
-            SidebarItems = AppRoutes.Sidebar;
+            Sections = AppRoutes.Sections;
+            _activeSection = Sections[0];
+            _activeFeatureTab = _activeSection.FeatureTabs[0];
 
             NavigateCommand = new RelayCommand(p =>
             {
                 if (p is string path && !string.IsNullOrWhiteSpace(path))
                     _router.Navigate(path, null);
+            });
+
+            SelectSectionCommand = new RelayCommand(p =>
+            {
+                if (p is not NavigationSection section)
+                    return;
+
+                ActiveSection = section;
+                var firstRoute = section.Items.FirstOrDefault()?.Path;
+                if (!string.IsNullOrWhiteSpace(firstRoute))
+                    _router.Navigate(firstRoute, null);
+            });
+
+            ToggleFeaturePanelCommand = new RelayCommand(_ =>
+                IsFeaturePanelOpen = !IsFeaturePanelOpen);
+
+            ToggleLeftNavigationCommand = new RelayCommand(_ =>
+                IsLeftNavigationOpen = !IsLeftNavigationOpen);
+
+            SelectFeatureTabCommand = new RelayCommand(p =>
+            {
+                if (p is not FeatureTab featureTab)
+                    return;
+
+                ActiveFeatureTab = featureTab;
+                var firstRoute = featureTab.Items.FirstOrDefault()?.Path;
+                if (!string.IsNullOrWhiteSpace(firstRoute))
+                    _router.Navigate(firstRoute, null);
             });
 
             NavigateToAddressCommand = new RelayCommand(_ =>
@@ -55,12 +89,14 @@ namespace Router.WPF.Sample.ViewModels
 
             CurrentPath    = _router.CurrentTarget;
             AddressBarPath = _router.CurrentTarget;
+            SyncActiveSection(_router.CurrentTarget);
             UpdateHistory();
         }
 
         private const int HistoryDisplayCap = 8;
 
-        public IReadOnlyList<SidebarItem> SidebarItems { get; }
+        public IReadOnlyList<NavigationSection> Sections { get; }
+        public IReadOnlyList<FeatureTab> VisibleFeatureTabs => ActiveSection.FeatureTabs;
         public ObservableCollection<HistoryEntry> History { get; } = new();
         public ObservableCollection<RouteSearchInfo> SearchResults { get; } = new();
         public int TotalHistoryCount => _router.PathRecord.Count();
@@ -93,7 +129,42 @@ namespace Router.WPF.Sample.ViewModels
             private set => Set(ref _statusMessage, value);
         }
 
+        public NavigationSection ActiveSection
+        {
+            get => _activeSection;
+            private set
+            {
+                if (!Set(ref _activeSection, value))
+                    return;
+
+                OnPropertyChanged(nameof(VisibleFeatureTabs));
+                ActiveFeatureTab = value.FeatureTabs[0];
+            }
+        }
+
+        public FeatureTab ActiveFeatureTab
+        {
+            get => _activeFeatureTab;
+            set => Set(ref _activeFeatureTab, value);
+        }
+
+        public bool IsFeaturePanelOpen
+        {
+            get => _isFeaturePanelOpen;
+            private set => Set(ref _isFeaturePanelOpen, value);
+        }
+
+        public bool IsLeftNavigationOpen
+        {
+            get => _isLeftNavigationOpen;
+            private set => Set(ref _isLeftNavigationOpen, value);
+        }
+
         public ICommand NavigateCommand { get; }
+        public ICommand SelectSectionCommand { get; }
+        public ICommand ToggleFeaturePanelCommand { get; }
+        public ICommand ToggleLeftNavigationCommand { get; }
+        public ICommand SelectFeatureTabCommand { get; }
         public ICommand NavigateToAddressCommand { get; }
         public ICommand BackCommand { get; }
         public ICommand ForwardCommand { get; }
@@ -104,6 +175,7 @@ namespace Router.WPF.Sample.ViewModels
         {
             CurrentPath = e.Target;
             AddressBarPath = e.Target;
+            SyncActiveSection(e.Target);
 
             StatusMessage = e.ExtraData is null
                 ? $"navigated to {e.Target}"
@@ -111,6 +183,25 @@ namespace Router.WPF.Sample.ViewModels
 
             UpdateHistory();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void SyncActiveSection(string path)
+        {
+            var section = Sections.FirstOrDefault(candidate =>
+                candidate.RoutePrefixes.Any(prefix =>
+                    string.Equals(path, prefix, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase)));
+
+            if (section is not null)
+                ActiveSection = section;
+
+            var featureTab = ActiveSection.FeatureTabs.FirstOrDefault(tab =>
+                tab.Items.Any(item =>
+                    string.Equals(path, item.Path, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(item.Path.TrimEnd('/') + "/", StringComparison.OrdinalIgnoreCase)));
+
+            if (featureTab is not null)
+                ActiveFeatureTab = featureTab;
         }
 
         private void UpdateHistory()

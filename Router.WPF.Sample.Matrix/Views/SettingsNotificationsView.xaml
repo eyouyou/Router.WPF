@@ -1,0 +1,21 @@
+<UserControl x:Class="Router.WPF.Sample.Views.SettingsNotificationsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <StackPanel Margin="20">
+        <TextBlock Text="Notifications" Style="{StaticResource H2}"/>
+        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,16">
+            Email digests, in-app banners, sound.
+        </TextBlock>
+        <UniformGrid Columns="2">
+            <StackPanel>
+                <TextBlock Text="EMAIL" Style="{StaticResource Label}"/>
+                <TextBlock Text="Daily digest at 09:00" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="IN-APP" Style="{StaticResource Label}"/>
+                <TextBlock Text="All event types" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </UniformGrid>
+    </StackPanel>
+</UserControl>

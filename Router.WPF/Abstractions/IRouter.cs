@@ -5,19 +5,45 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using Router.Wpf.Abstractions.Routing;
 
 namespace Router.Wpf.Abstractions
 {
+    /// <summary>
+    /// Optional presentation-neutral identity for one opened instance of a
+    /// pre-registered route. UI shells may use it to keep a stable tab while
+    /// the matched path and parameters change.
+    /// </summary>
+    public sealed record RouteInstanceMetadata(
+        string InstanceId,
+        string? Title = null,
+        object? Payload = null);
+
     public class NavigationEventArgs
     {
-        public NavigationEventArgs(string target, object? extraData)
+        public NavigationEventArgs(
+            string target,
+            object? extraData,
+            IReadOnlyList<RouteMatch>? matches = null,
+            bool addedToHistory = true)
         {
             Target = target;
             ExtraData = extraData;
+            Matches = matches ?? Array.Empty<RouteMatch>();
+            AddedToHistory = addedToHistory;
         }
         public string Target { get; set; }
         public object? ExtraData { get; set; }
+        public IReadOnlyList<RouteMatch> Matches { get; }
+        public Route? Route => Matches.LastOrDefault()?.Route;
+        public string? RouteKey => Route?.Key;
+        public IReadOnlyDictionary<string, object> Parameters =>
+            Matches.LastOrDefault()?.Parameters
+            ?? (IReadOnlyDictionary<string, object>)new Dictionary<string, object>();
+        public bool AddedToHistory { get; }
+        public RouteInstanceMetadata? RouteInstance =>
+            ExtraData as RouteInstanceMetadata;
     }
 
     public interface INavigation

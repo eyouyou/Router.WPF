@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Router.WPF.Sample"
         xmlns:vm="clr-namespace:Router.WPF.Sample.ViewModels"
         mc:Ignorable="d"
-        Title="Router.WPF Sample"
+        Title="Router.WPF Matrix Navigation Sample"
         Height="760"
         Width="1280"
         MinHeight="600"
@@ -156,7 +156,7 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{Binding IsLeftNavigationOpen, Converter={x:Static local:BooleanToGridLengthConverter.Instance}, ConverterParameter=156}"/>
-            <ColumnDefinition Width="{Binding IsFeaturePanelOpen, Converter={x:Static local:BooleanToGridLengthConverter.Instance}, ConverterParameter=224}"/>
+            <ColumnDefinition Width="{Binding IsFeaturePanelOpen, Converter={x:Static local:BooleanToGridLengthConverter.Instance}, ConverterParameter=240}"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -187,7 +187,7 @@
                     </Button>
                     <Button Style="{StaticResource ToolbarButton}"
                             Command="{Binding ToggleFeaturePanelCommand}"
-                            ToolTip="Show or hide the feature list">
+                            ToolTip="Show or hide the feature panel">
                         <TextBlock Text="&#xE76C;"
                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                    FontSize="14"/>
@@ -195,7 +195,7 @@
                 </StackPanel>
 
                 <ItemsControl Grid.Column="1"
-                              ItemsSource="{Binding Sections}"
+                              ItemsSource="{Binding OpenRoutes.Items}"
                               VerticalAlignment="Center">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -205,20 +205,20 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource TopNavigationButton}"
-                                    Command="{Binding DataContext.SelectSectionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Command="{Binding DataContext.ActivateOpenRouteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}">
                                 <Button.Tag>
                                     <MultiBinding Converter="{x:Static local:EqualityConverter.Instance}">
                                         <Binding/>
-                                        <Binding Path="DataContext.ActiveSection"
+                                        <Binding Path="DataContext.OpenRoutes.ActiveItem"
                                                  RelativeSource="{RelativeSource AncestorType=Window}"/>
                                     </MultiBinding>
                                 </Button.Tag>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Glyph}"
+                                    <TextBlock Text="&#xE8A7;"
                                                Margin="0,0,7,0"
                                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                               FontSize="13"
+                                               FontSize="12"
                                                VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Title}"
                                                FontSize="12"
@@ -246,53 +246,47 @@
             </Grid>
         </Border>
 
-        <!-- Left navigation chooses a feature group and opens its first item. -->
+        <!-- The left tab only controls the small list rendered below it. -->
         <Border Grid.Row="1"
                 Grid.Column="0"
-                Background="{StaticResource SidebarBrush}">
+                Background="#F7F7F9"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,1,0">
             <DockPanel>
                 <Border DockPanel.Dock="Top"
                         Height="68"
-                        Padding="16,0"
-                        BorderBrush="#2A2A32"
+                        Padding="18,0"
+                        Background="White"
+                        BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="0,0,0,1">
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{Binding ActiveSection.Title}"
-                                   Foreground="White"
-                                   FontSize="14"
+                        <TextBlock Text="Local routes"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontSize="15"
                                    FontWeight="SemiBold"/>
-                        <TextBlock Text="Navigation"
+                        <TextBlock Text="Contextual tools"
                                    Margin="0,2,0,0"
-                                   Foreground="{StaticResource SidebarMutedBrush}"
+                                   Foreground="{StaticResource MutedBrush}"
                                    FontSize="10"/>
                     </StackPanel>
                 </Border>
-                <ItemsControl ItemsSource="{Binding VisibleFeatureTabs}" Margin="6,10">
+
+                <ItemsControl ItemsSource="{Binding LeftNavigationItems}" Margin="6,10">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource LeftNavigationButton}"
-                                    Command="{Binding DataContext.SelectFeatureTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Command="{Binding DataContext.SelectLeftNavigationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}">
                                 <Button.Tag>
                                     <MultiBinding Converter="{x:Static local:EqualityConverter.Instance}">
                                         <Binding/>
-                                        <Binding Path="DataContext.ActiveFeatureTab"
+                                        <Binding Path="DataContext.ActiveLeftNavigation"
                                                  RelativeSource="{RelativeSource AncestorType=Window}"/>
                                     </MultiBinding>
                                 </Button.Tag>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="14"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Title}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="›"
-                                               HorizontalAlignment="Right"
-                                               Foreground="{StaticResource SidebarMutedBrush}"/>
-                                </Grid>
+                                <TextBlock Text="{Binding Title}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"/>
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -313,8 +307,8 @@
                         Background="White"
                         BorderBrush="{StaticResource BorderBrush}"
                         BorderThickness="0,0,0,1">
-                    <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="{Binding ActiveSection.Title}"
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ActiveLeftNavigation.Title}"
                                        Foreground="{StaticResource TextBrush}"
                                        FontSize="15"
                                        FontWeight="SemiBold"/>
@@ -343,8 +337,8 @@
                     </StackPanel>
                 </Border>
 
-                <TabControl ItemsSource="{Binding VisibleFeatureTabs}"
-                            SelectedItem="{Binding ActiveFeatureTab}"
+                <TabControl ItemsSource="{Binding AggregatedTabs}"
+                            SelectedItem="{Binding ActiveSideTab}"
                             Margin="10,10,10,0"
                             Padding="0"
                             Background="Transparent"
@@ -365,39 +359,41 @@
                                 <ItemsControl ItemsSource="{Binding Items}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Button Style="{StaticResource FeatureButton}"
-                                                    Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding Path}">
-                                                <Button.Tag>
-                                                    <MultiBinding Converter="{x:Static local:CurrentRouteConverter.Instance}">
-                                                        <Binding Path="Path"/>
-                                                        <Binding Path="DataContext.CurrentPath"
-                                                                 RelativeSource="{RelativeSource AncestorType=Window}"/>
-                                                    </MultiBinding>
-                                                </Button.Tag>
+                                            <Border Margin="2,0,2,8"
+                                                    Padding="12,10"
+                                                    Background="White"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="7">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="28"/>
                                                         <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="14"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Glyph}"
-                                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                               FontSize="14"
-                                                               VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1"
-                                                               Text="{Binding Title}"
-                                                               FontSize="12"
-                                                               FontWeight="SemiBold"
-                                                               VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="2"
-                                                               Text="›"
-                                                               Foreground="{StaticResource MutedBrush}"
-                                                               FontSize="16"
-                                                               HorizontalAlignment="Right"
-                                                               VerticalAlignment="Center"/>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   Foreground="{StaticResource TextBrush}"
+                                                                   FontSize="12"
+                                                                   FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Margin="0,3,0,0"
+                                                                   Foreground="{StaticResource MutedBrush}"
+                                                                   FontSize="10"
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="1"
+                                                            Margin="8,0,0,0"
+                                                            Padding="7,3"
+                                                            Background="{StaticResource AccentSoftBrush}"
+                                                            CornerRadius="5"
+                                                            VerticalAlignment="Top">
+                                                        <TextBlock Text="{Binding Value}"
+                                                                   Foreground="{StaticResource AccentBrush}"
+                                                                   FontSize="10"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Border>
                                                 </Grid>
-                                            </Button>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

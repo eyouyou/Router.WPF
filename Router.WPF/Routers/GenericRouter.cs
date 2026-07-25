@@ -100,7 +100,7 @@ namespace Router.Wpf.Routers
 
             if (addHistory) PushRecord(pathName);
             CurrentTarget = pathName;
-            var args = new NavigationEventArgs(pathName, extraData);
+            var args = new NavigationEventArgs(pathName, extraData, matches, addHistory);
 
             // 整条链完全相同、长度也一致 —— 不需要动 chain。
             // 历史依然要 push（按浏览器语义，重复 URL 也算一次跳转），

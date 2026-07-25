@@ -1,0 +1,49 @@
+<UserControl x:Class="Router.WPF.Sample.Views.ProfileView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BgBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="40,32" MaxWidth="900" HorizontalAlignment="Stretch">
+            <StackPanel>
+                <TextBlock Text="Profile" Style="{StaticResource H1}"/>
+                <TextBlock Text="Information visible to others on the platform." Style="{StaticResource Muted}" Margin="0,0,0,24"/>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="{StaticResource AccentBrush}">
+                                <TextBlock Text="EY" Foreground="White" FontWeight="SemiBold" FontSize="22"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Eyou You" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="@eyouyou · Joined April 2026" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,20"/>
+
+                        <UniformGrid Columns="3">
+                            <StackPanel>
+                                <TextBlock Text="DISPLAY NAME" Style="{StaticResource Label}"/>
+                                <TextBlock Text="Eyou You" Style="{StaticResource Body}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="USERNAME" Style="{StaticResource Label}"/>
+                                <TextBlock Text="@eyouyou" Style="{StaticResource Mono}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="EMAIL" Style="{StaticResource Label}"/>
+                                <TextBlock Text="eyou@example.com" Style="{StaticResource Mono}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
